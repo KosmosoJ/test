@@ -1,5 +1,5 @@
 import pymongo
 
-client = pymongo.MongoClient('mongodb://root:example@localhost:27017/')
+client = pymongo.MongoClient("mongodb://root:example@mongo:27017/") # Инициализация клиента для монго 
 
-app = client.app
+app = client.app # Подключение к бд приложения
