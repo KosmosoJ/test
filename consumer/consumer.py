@@ -31,7 +31,8 @@ async def add_response(body, *args, **kwargs):
 
 async def get_users(message):
     """ Получение всех пользователей (вывод просто принтом стоит) """
-    await db_get_users(message["message"]["body"])
+    users = await db_get_users(message["message"]["body"])
+    await add_response(message, data={'users':users})
     #TODO Сделать вывод в request_response
 
 async def add_notifications(body):
@@ -42,41 +43,15 @@ async def add_notifications(body):
 async def edit_document(body):
     """ Редактирование и сохранение реквеста в монго"""
     notification = await db_read_notification(body)
-    # if notification:
-    #     data = {
-    #         "request_id": body["request_id"],
-    #         "message": {
-    #             "action": body['message']['action'],
-    #             "body": {"message": "success", 'notification_id':body['message']['body']['notification_id']},
-    #         },
-    #     }
-    # else:
-    #     data = {
-    #         "request_id": body["request_id"],
-    #         "message": {
-    #             "action": body['message']['action'],
-    #             "body": {"message": "failure",},
-    #         },
-    #     }
     await add_response(body, data={'notification_id':body['message']['body']['notification_id']})
 
-    # producer = AIOKafkaProducer(bootstrap_servers=KAFKA_URL)
-    # await producer.start()
-    # try:
-    #     await producer.send_and_wait(
-    #         "notification_responses", value=json.dumps(data).encode("utf-8")
-    #     )
-    # finally:
-    #     await producer.stop()
-
 async def process_data(action, body=None):
-    """ """
+    """ Фильтр на команды """
     actions = {
         "add_notification": add_notifications,
         "get_users": get_users,
         "read_notification": edit_document,
     }
-    print(action)
     if action in actions:
         return await actions[action](body) if actions[action] else None
     else:

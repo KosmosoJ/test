@@ -1,14 +1,19 @@
 from db import app
 import pymongo
 from datetime import datetime
-from bson import ObjectId
+from bson import ObjectId, json_util
+import json 
 
 async def db_get_users(body=None):
     """ Получение всех юзеров из монго """
     client = pymongo.MongoClient("mongodb://root:example@mongo:27017/")
-    users = client.app.users.find()
-    for user in users:
-        print(user)
+    raw_users = client.app.users.find()
+    users = list(raw_users)
+    # for raw_user in raw_users:
+    #     raw_user['_id'] = str(raw_user['_id'])
+    #     users.append(raw_user)
+    
+    return users
 
 
 async def db_add_notification(message):
