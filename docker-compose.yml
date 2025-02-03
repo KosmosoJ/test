@@ -2,25 +2,45 @@ services:
   web:
     build: ./fastapi_app
     environment:
-      KAFKA_URL: kafka:29092, kafka2:29093
+      KAFKA_URL: kafka1:8097,kafka2:8098,kafka1:8099
     command: bash -c 'cd /app/producer && uvicorn main:app  --host 0.0.0.0 --reload'
     ports:
       - '8000:8000'
     depends_on:
-      - kafka
+      - kafka1
     volumes:
       - ./fastapi_app:/app/producer
 
-  tg_bot:
-    build: ./tg_bot
+  consumer:
+    build: ./consumer
     environment:
-      KAFKA_URL: kafka:29092, kafka2:29093
+      KAFKA_URL: kafka1:29092,kafka2:29093,kafka3:29094
+    command: [python, consumer.py]
     depends_on:
-      - kafka
+      - kafka1
+      - kafka2
     volumes:
-      - ./tg_bot:/app/tg_bot
-    command: [python, bot.py]
+      - ./consumer:/app/consumer
 
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - 27017:27017
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+      ME_CONFIG_BASICAUTH: false
   
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -30,20 +50,20 @@ services:
     ports:
       - 22181:2181
 
-  kafka:
+  kafka1:
     image: confluentinc/cp-kafka:latest
     depends_on:
       - zookeeper
     ports:
       - 29092:29092
-    hostname: kafka
+    hostname: kafka1
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
 
   kafka2:
     image: confluentinc/cp-kafka:latest
@@ -58,7 +78,22 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:29093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+
+  kafka3:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - 29094:29092
+    hostname: kafka3
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:29094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
 
   kafka-ui:
     image: provectuslabs/kafka-ui
@@ -68,10 +103,11 @@ services:
     restart: always
     environment:
       - KAFKA_CLUSTERS_0_NAME=local
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092,kafka2:29093
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka1:29092,kafka2:29093,kafka3:29094
       - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
-    depends_on:
-      - kafka
+    links:
+      - kafka1
+      - kafka3
       - kafka2
       - zookeeper
 
