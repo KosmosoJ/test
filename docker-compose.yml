@@ -1,16 +1,6 @@
-services:
-  web:
-    build: ./fastapi_app
-    environment:
-      KAFKA_URL: kafka1:8097,kafka2:8098,kafka1:8099
-    command: bash -c 'cd /app/producer && uvicorn main:app  --host 0.0.0.0 --reload'
-    ports:
-      - '8000:8000'
-    depends_on:
-      - kafka1
-    volumes:
-      - ./fastapi_app:/app/producer
+version: '3.8'
 
+services:
   consumer:
     build: ./consumer
     environment:
@@ -110,17 +100,3 @@ services:
       - kafka3
       - kafka2
       - zookeeper
-
-  # db:
-  #   image: postgres
-  #   environment:
-  #     POSTGRES_USER: user
-  #     POSTGRES_PASSWORD: pass
-  #     POSTGRES_DB: book_db
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -d book_db -U user"]
-  #     interval: 30s
-  #     timeout: 60s
-  #     retries: 5
-  #     start_period: 80s
-
