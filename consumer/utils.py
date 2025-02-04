@@ -5,6 +5,15 @@ from aiokafka import AIOKafkaProducer
 import os
 
 KAFKA_URL = os.getenv("KAFKA_URL")
+KAFKA_USER = os.getenv("KAFKA_USER")
+KAFKA_PASSWORD = os.getenv("KAFKA_PASS")
+
+KAFKA_PRODUCER_CONF = {
+    "security_protocol": "SASL_PLAINTEXT",
+    "sasl_mechanism": "PLAIN",
+    "sasl_plain_username": KAFKA_USER,
+    "sasl_plain_password": KAFKA_PASSWORD,
+}
 
 
 async def db_get_users(body=None):
@@ -36,7 +45,7 @@ async def db_add_notification(message):
         },
     }
     users = app.notifications.insert_one(data).inserted_id
-    return users
+    return str(users)
 
 
 async def db_read_notification(message):
@@ -51,11 +60,11 @@ async def db_read_notification(message):
 
 
 async def send_to_dlq(message):
-    """ Отправка сообщения в мертвую очередь """
-    producer = AIOKafkaProducer(bootstrap_servers=KAFKA_URL)
+    """Отправка сообщения в мертвую очередь"""
+    producer = AIOKafkaProducer(bootstrap_servers=KAFKA_URL, **KAFKA_PRODUCER_CONF)
     await producer.start()
 
     try:
-        await producer.send_and_wait("dead_letter",value=message)
+        await producer.send_and_wait("dead_letter", value=message)
     finally:
         await producer.stop()
