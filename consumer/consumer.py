@@ -38,14 +38,7 @@ async def get_kafka_producer():
 
 
 async def get_or_create_topic(topic_name):
-    """Получение или создание топика
-
-    Args:
-        topic_name (_type_): Название создаваемого/получаемого топика
-
-    Returns:
-        _type_: _description_
-    """
+    """Получение или создание топика"""
     client = AIOKafkaAdminClient(
         bootstrap_servers=KAFKA_URL,
         sasl_plain_username=KAFKA_USER,
@@ -124,7 +117,7 @@ async def process_data(action, body=None):
         "read_notification": edit_document,
     }
     if action in actions:
-        return await actions[action](body) if actions[action] else None
+        return await actions[action](body)
     else:
         await get_or_create_topic("dead_letter")
         await send_to_dlq(json.dumps(body).encode("utf-8"))

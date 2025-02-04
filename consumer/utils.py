@@ -6,7 +6,7 @@ import os
 
 KAFKA_URL = os.getenv("KAFKA_URL")
 KAFKA_USER = os.getenv("KAFKA_USER")
-KAFKA_PASSWORD = os.getenv("KAFKA_PASS")
+KAFKA_PASSWORD = os.getenv("KAFKA_PASSWORD")
 
 KAFKA_PRODUCER_CONF = {
     "security_protocol": "SASL_PLAINTEXT",
