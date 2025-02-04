@@ -3,6 +3,7 @@ from datetime import datetime
 from bson import ObjectId
 from aiokafka import AIOKafkaProducer
 import os
+from pymongo.errors import ConnectionFailure
 
 KAFKA_URL = os.getenv("KAFKA_URL")
 KAFKA_USER = os.getenv("KAFKA_USER")
@@ -15,13 +16,6 @@ KAFKA_PRODUCER_CONF = {
     "sasl_plain_password": KAFKA_PASSWORD,
 }
 
-
-async def db_get_users(body=None):
-    """Получение всех юзеров из монго"""
-    raw_users = app.users.find()
-    users = list(raw_users)
-
-    return users
 
 
 async def db_add_notification(message):
@@ -50,13 +44,16 @@ async def db_add_notification(message):
 
 async def db_read_notification(message):
     """Запись новой информации в уведомления"""
-    body = message["message"]["body"]
-    update_data = {"$set": {"is_read": True, "read_at": datetime.now()}}
-    notification = app.notifications.update_one(
-        filter={"_id": ObjectId(body["notification_id"])}, update=update_data
-    )
+    try:
+        body = message["message"]["body"]
+        update_data = {"$set": {"is_read": True, "read_at": datetime.now()}}
+        notification = app.notifications.update_one(
+            filter={"_id": ObjectId(body["notification_id"])}, update=update_data
+        )
 
-    return str(notification)
+        return str(notification)
+    except ConnectionError:
+        return None 
 
 
 async def send_to_dlq(message):
@@ -68,3 +65,17 @@ async def send_to_dlq(message):
         await producer.send_and_wait("dead_letter", value=message)
     finally:
         await producer.stop()
+
+
+async def db_get_notifications_by_user_id(user_id:str, is_read):
+    try:
+        if is_read is not None:
+            query = app.notifications.find({'user_id':user_id, 'is_read':is_read})
+        else:
+            query = app.notifications.find({'user_id':user_id})
+        
+        users = list(query)
+        return users 
+    except ConnectionError:
+        return None 
+        
