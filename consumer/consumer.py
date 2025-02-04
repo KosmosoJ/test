@@ -73,7 +73,7 @@ async def consume_data():
         bootstrap_servers=KAFKA_URL,
     )
     await consumer.start()
-
+    
     try:
         async for msg in consumer:
             raw_data = msg.value.decode("utf-8")
